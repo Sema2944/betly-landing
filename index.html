@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Betly — AI Спортивная аналитика</title>
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-card: #111827;
+            --bg-card-hover: #1a2332;
+            --accent: #00e68a;
+            --accent-dim: #00c278;
+            --accent-glow: rgba(0, 230, 138, 0.15);
+            --text-primary: #f0f4f8;
+            --text-secondary: #8899aa;
+            --text-muted: #556677;
+            --border: #1e2a3a;
+            --orange: #ff8c42;
+            --blue: #4d9fff;
+            --red: #ff4d6a;
+            --purple: #a855f7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Noise texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Gradient orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.4;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .orb-1 {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+            top: -150px; right: -100px;
+            animation: float 12s ease-in-out infinite;
+        }
+        .orb-2 {
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, var(--blue) 0%, transparent 70%);
+            bottom: 20%; left: -100px;
+            animation: float 15s ease-in-out infinite reverse;
+        }
+        .orb-3 {
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, var(--purple) 0%, transparent 70%);
+            top: 50%; right: 10%;
+            animation: float 10s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.05); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Header */
+        header {
+            padding: 24px 0 16px;
+            text-align: center;
+        }
+
+        .logo {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent) 0%, #00ffaa 50%, var(--blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-top: 4px;
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 32px 0 24px;
+        }
+
+        .hero h1 {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 26px;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+        }
+
+        .hero h1 .highlight {
+            background: linear-gradient(135deg, var(--accent), #00ffaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 380px;
+            margin: 0 auto;
+        }
+
+        /* Stats strip */
+        .stats-strip {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            padding: 20px 0;
+            margin: 16px 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        /* Feature cards */
+        .features {
+            padding: 16px 0;
+        }
+
+        .section-title {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px;
+            height: 100%;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .feature-card.hunter::before { background: var(--accent); }
+        .feature-card.live::before { background: var(--red); }
+        .feature-card.data::before { background: var(--blue); }
+
+        .feature-icon {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .feature-name {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .feature-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .feature-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+        }
+
+        .tag-pro {
+            background: var(--accent-glow);
+            color: var(--accent);
+            border: 1px solid rgba(0, 230, 138, 0.3);
+        }
+
+        .tag-free {
+            background: rgba(77, 159, 255, 0.1);
+            color: var(--blue);
+            border: 1px solid rgba(77, 159, 255, 0.3);
+        }
+
+        /* Sports */
+        .sports-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            padding: 16px 0;
+        }
+
+        .sport-chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 8px 16px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .sport-chip:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        /* Pricing */
+        .pricing {
+            padding: 24px 0;
+        }
+
+        .price-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .price-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .price-card.popular {
+            border-color: var(--accent);
+            background: linear-gradient(135deg, rgba(0, 230, 138, 0.05) 0%, var(--bg-card) 100%);
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            background: var(--accent);
+            color: var(--bg-primary);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+
+        .price-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .price-name {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .price-amount {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .price-amount span {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        .price-features {
+            list-style: none;
+            margin-top: 12px;
+        }
+
+        .price-features li {
+            font-size: 13px;
+            color: var(--text-secondary);
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .price-features li::before {
+            content: '✓';
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        /* Trial banner */
+        .trial-banner {
+            background: linear-gradient(135deg, rgba(0, 230, 138, 0.1) 0%, rgba(77, 159, 255, 0.1) 100%);
+            border: 1px dashed var(--accent);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .trial-banner h3 {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        .trial-banner p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* CTA Button */
+        .cta-section {
+            padding: 24px 0 40px;
+            text-align: center;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dim) 100%);
+            color: var(--bg-primary);
+            font-family: 'Unbounded', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 16px 40px;
+            border-radius: 16px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 24px rgba(0, 230, 138, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .cta-button:hover::before {
+            left: 100%;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 230, 138, 0.4);
+        }
+
+        .cta-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+
+        /* How it works */
+        .how-it-works {
+            padding: 16px 0;
+        }
+
+        .step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+
+        .step-num {
+            font-family: 'Unbounded', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--accent);
+            opacity: 0.3;
+            line-height: 1;
+            min-width: 40px;
+        }
+
+        .step-content h4 {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .step-content p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Example analysis */
+        .example-block {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            margin: 16px 0;
+            font-family: 'Manrope', monospace;
+            font-size: 12px;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        .example-block .line-accent { color: var(--accent); font-weight: 600; }
+        .example-block .line-orange { color: var(--orange); }
+        .example-block .line-blue { color: var(--blue); }
+        .example-block .line-red { color: var(--red); }
+        .example-block .line-white { color: var(--text-primary); font-weight: 600; }
+
+        /* Disclaimer */
+        .disclaimer {
+            text-align: center;
+            padding: 20px 0 40px;
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            border-top: 1px solid var(--border);
+            margin-top: 20px;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate {
+            animation: fadeInUp 0.6s ease forwards;
+            opacity: 0;
+        }
+
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+        .delay-6 { animation-delay: 0.6s; }
+
+        /* Pulse animation for live indicator */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .live-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            background: var(--red);
+            border-radius: 50%;
+            margin-right: 6px;
+            animation: pulse 1.5s ease infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="container">
+
+        <!-- Header -->
+        <header class="animate">
+            <div class="logo">BETLY</div>
+            <div class="logo-sub">AI Sports Analytics</div>
+        </header>
+
+        <!-- Hero -->
+        <div class="hero">
+            <h1 class="animate delay-1">
+                Знай <span class="highlight">на что ставить</span><br>до начала матча
+            </h1>
+            <p class="animate delay-2">
+                AI анализирует кэфы, форму, составы и историю — 
+                и каждое утро присылает Топ-3 лучших события дня
+            </p>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-strip animate delay-3">
+            <div class="stat-item">
+                <div class="stat-value">6</div>
+                <div class="stat-label">Спортов</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">15+</div>
+                <div class="stat-label">Лиг</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">24/7</div>
+                <div class="stat-label">Анализ</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">3с</div>
+                <div class="stat-label">Ответ AI</div>
+            </div>
+        </div>
+
+        <!-- Example Analysis -->
+        <div class="section-title animate delay-3">Пример анализа</div>
+        <div class="example-block animate delay-4">
+            <div class="line-accent">🎯 ОХОТНИК — 18 февраля 2026</div>
+            <br>
+            <div class="line-white">1️⃣ СКА — ЦСКА (KHL, 19:30)</div>
+            <div class="line-accent">Confidence: 82%</div>
+            <div class="line-blue">📈 Линия: 1.85 → 1.78 (движение на СКА)</div>
+            <div class="line-orange">📋 Форма: СКА 7W-2L-1OTL дома</div>
+            <div>🏥 ЦСКА без 2 лидеров</div>
+            <div class="line-white">→ СКА П1 (1.78) — Confidence 4/5</div>
+            <br>
+            <div class="line-red">⚡ ЭКСПРЕСС ДНЯ (Кэф 2.8)</div>
+            <div>СКА П1 + Барселона ТМ(3.5)Б + Lakers ML</div>
+        </div>
+
+        <!-- Features -->
+        <div class="features">
+            <div class="section-title animate delay-3">Возможности</div>
+
+            <div class="feature-card hunter animate delay-3">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-name">Охотник</div>
+                <div class="feature-desc">
+                    Каждое утро — Топ-3 события дня с confidence score, 
+                    движением линии и обоснованием. Плюс Экспресс дня.
+                </div>
+                <span class="feature-tag tag-pro">PRO</span>
+            </div>
+
+            <div class="feature-card live animate delay-4">
+                <div class="feature-icon"><span class="live-dot"></span>LIVE PRO</div>
+                <div class="feature-name">Анализ в реальном времени</div>
+                <div class="feature-desc">
+                    Броски, владение, momentum, движение линии live. 
+                    AI подсказывает точки входа прямо по ходу матча.
+                </div>
+                <span class="feature-tag tag-pro">PRO</span>
+            </div>
+
+            <div class="feature-card data animate delay-5">
+                <div class="feature-icon">📊</div>
+                <div class="feature-name">PRE-анализ</div>
+                <div class="feature-desc">
+                    Кэфы, форма, H2H, составы, травмы — всё в одном экране. 
+                    Бесплатно для всех пользователей.
+                </div>
+                <span class="feature-tag tag-free">FREE</span>
+            </div>
+        </div>
+
+        <!-- Sports -->
+        <div class="section-title animate delay-3">Спорты</div>
+        <div class="sports-grid animate delay-4">
+            <div class="sport-chip">⚽ Футбол</div>
+            <div class="sport-chip">🏒 Хоккей</div>
+            <div class="sport-chip">🏀 Баскетбол</div>
+            <div class="sport-chip">🏐 Волейбол</div>
+            <div class="sport-chip">🤾 Гандбол</div>
+            <div class="sport-chip">🥊 MMA</div>
+        </div>
+
+        <!-- How it works -->
+        <div class="how-it-works">
+            <div class="section-title animate delay-3">Как это работает</div>
+
+            <div class="step animate delay-3">
+                <div class="step-num">01</div>
+                <div class="step-content">
+                    <h4>Запускаешь бота</h4>
+                    <p>Нажимаешь /start — получаешь 3 дня бесплатного PRO</p>
+                </div>
+            </div>
+
+            <div class="step animate delay-4">
+                <div class="step-num">02</div>
+                <div class="step-content">
+                    <h4>Получаешь Топ-3 утром</h4>
+                    <p>AI проанализировал все матчи дня и выбрал лучшие</p>
+                </div>
+            </div>
+
+            <div class="step animate delay-5">
+                <div class="step-num">03</div>
+                <div class="step-content">
+                    <h4>Анализируешь любой матч</h4>
+                    <p>Выбираешь спорт → лигу → матч → получаешь полный разбор</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trial -->
+        <div class="trial-banner animate delay-4">
+            <h3>🎁 3 дня бесплатно</h3>
+            <p>Попробуй PRO без оплаты. Охотник + LIVE PRO — полный доступ.</p>
+        </div>
+
+        <!-- Pricing -->
+        <div class="pricing">
+            <div class="section-title animate delay-3">Тарифы PRO</div>
+
+            <div class="price-cards">
+                <div class="price-card animate delay-3">
+                    <div class="price-header">
+                        <div class="price-name">Неделя</div>
+                        <div class="price-amount">299₽</div>
+                    </div>
+                    <ul class="price-features">
+                        <li>Охотник: Топ-3 каждое утро</li>
+                        <li>LIVE PRO: полный анализ</li>
+                        <li>Все спорты</li>
+                    </ul>
+                </div>
+
+                <div class="price-card popular animate delay-4">
+                    <div class="popular-badge">ВЫГОДНО</div>
+                    <div class="price-header">
+                        <div class="price-name">Месяц</div>
+                        <div class="price-amount">799₽</div>
+                    </div>
+                    <ul class="price-features">
+                        <li>Всё из «Неделя»</li>
+                        <li>Экономия 40%</li>
+                        <li>Экспресс дня</li>
+                    </ul>
+                </div>
+
+                <div class="price-card animate delay-5">
+                    <div class="price-header">
+                        <div class="price-name">Сезон</div>
+                        <div class="price-amount">4990₽ <span>/ 180 дней</span></div>
+                    </div>
+                    <ul class="price-features">
+                        <li>Максимальная экономия</li>
+                        <li>Приоритетные обновления</li>
+                        <li>Все будущие спорты</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="cta-section">
+            <a href="https://t.me/BetlyAIBot" class="cta-button animate delay-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                </svg>
+                Открыть Betly
+            </a>
+            <div class="cta-sub">Бесплатно • 3 дня PRO в подарок</div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer">
+            Betly — инструмент аналитики, а не прогноз.<br>
+            Не является рекомендацией к совершению ставок.<br>
+            © 2026 Betly AI Sports Analytics
+        </div>
+
+    </div>
+</body>
+</html>
