@@ -497,6 +497,11 @@
             margin-top: 20px;
         }
 
+        .disclaimer a:hover {
+            color: var(--accent) !important;
+            border-bottom-color: var(--accent) !important;
+        }
+
         /* Animations */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
@@ -732,6 +737,12 @@
             Betly — инструмент аналитики, а не прогноз.<br>
             Не является рекомендацией к совершению ставок.<br>
             © 2026 Betly AI Sports Analytics
+            <div style="margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px;">
+                <a href="/legal#privacy" style="color: var(--text-muted); text-decoration: none; border-bottom: 1px solid transparent; transition: all 0.2s;">Конфиденциальность</a>
+                <a href="/legal#offer" style="color: var(--text-muted); text-decoration: none; border-bottom: 1px solid transparent; transition: all 0.2s;">Договор-оферта</a>
+                <a href="/legal#terms" style="color: var(--text-muted); text-decoration: none; border-bottom: 1px solid transparent; transition: all 0.2s;">Пользовательское соглашение</a>
+                <a href="/legal#refund" style="color: var(--text-muted); text-decoration: none; border-bottom: 1px solid transparent; transition: all 0.2s;">Возвраты</a>
+            </div>
         </div>
 
     </div>
